@@ -1,13 +1,14 @@
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
-from data import documents
+from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
 
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
-doc_embeddings = embedder.encode(documents)
 
-def retrieve(query, top_k=3):
-    query_embedding = embedder.encode(query)
-    scores = cosine_similarity([query_embedding], doc_embeddings)[0]
-    top_indices = np.argsort(scores)[-top_k:][::-1]
-    return [(documents[i], float(scores[i])) for i in top_indices]
+def embed_chunks(chunks: list[str]) -> np.ndarray:
+    return embedder.encode(chunks, convert_to_numpy=True)
+
+def retrieve(query: str, chunks: list[str], chunk_embeddings: np.ndarray, top_k: int = 3) -> list[str]:
+    q_emb = embedder.encode([query], convert_to_numpy=True)
+    scores = cosine_similarity(q_emb, chunk_embeddings)[0]
+    top_idx = scores.argsort()[::-1][:top_k]
+    return [chunks[i] for i in top_idx]
